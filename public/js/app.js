@@ -84974,7 +84974,8 @@ function (_React$Component) {
       activeUsers: null,
       hideVideo: null,
       showMessanger: null,
-      messageVal: ''
+      messageVal: '',
+      appendDOM: ''
     };
     _this.user = window.user;
     _this.user.stream = null;
@@ -85120,9 +85121,6 @@ function (_React$Component) {
       this.channel.bind("client-reject-".concat(this.user.id), function (signal) {
         alert("".concat(_this3.members.members[signal.userId]['name'], " rejected your offer!"));
       });
-      this.channel.bind("client-send-message-".concat(this.user.id), function (signal) {
-        alert("".concat(_this3.members.members[signal.userId]['name'], "!"));
-      });
     }
   }, {
     key: "setPeer",
@@ -85178,7 +85176,8 @@ function (_React$Component) {
       peer.on('error', function (err) {
         console.log(err);
       });
-      peer.on('data', function (data) {//TODO handle this
+      peer.on('data', function (data) {
+        _this4.appendMessage(data);
       });
       return peer;
     }
@@ -85254,6 +85253,14 @@ function (_React$Component) {
       });
     }
   }, {
+    key: "appendMessage",
+    value: function appendMessage(message) {
+      alert(message);
+      this.setState({
+        appendDOM: message
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
       var _this6 = this;
@@ -85297,7 +85304,7 @@ function (_React$Component) {
         }
       }))), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: this.showMessangerCon(true)
-      }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", null, "Type message:", react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
+      }, this.state.appendDOM ? react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, this.state.appendDOM) : '', react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", null, "Type message:", react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
         type: "text",
         value: this.state.messageVal,
         onChange: this.handleInputChange

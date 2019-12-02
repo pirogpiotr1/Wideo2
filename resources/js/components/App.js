@@ -19,7 +19,8 @@ class App extends React.Component{
             activeUsers:null,
             hideVideo:null,
             showMessanger:null,
-            messageVal:''
+            messageVal:'',
+            appendDOM:''
         };
 
         this.user = window.user;
@@ -141,10 +142,6 @@ class App extends React.Component{
             alert(`${this.members.members[signal.userId]['name']} rejected your offer!`);
         });
 
-        this.channel.bind(`client-send-message-${this.user.id}`,(signal) =>{
-            alert(`${this.members.members[signal.userId]['name']}!`);
-        });
-
     }
     setPeer(userId,initiator = true,){
 
@@ -190,8 +187,7 @@ class App extends React.Component{
         peer.on('error', (err) => {console.log(err)});
 
         peer.on('data', (data) => {
-           //TODO handle this
-
+            this.appendMessage(data);
         });
 
         return peer;
@@ -250,7 +246,12 @@ class App extends React.Component{
     handleInputChange(event){
         this.setState({messageVal: event.target.value});
     }
+    appendMessage(message){
+        alert(message);
 
+        this.setState({appendDOM:message});
+
+    }
     render() {
 
         return (
@@ -278,7 +279,12 @@ class App extends React.Component{
                                     </div>
                                 </div>
                                 <div className={this.showMessangerCon(true)}>
-
+                                    {
+                                        this.state.appendDOM ?
+                                            <div>{ this.state.appendDOM}</div>
+                                            :
+                                            ''
+                                    }
                                     <form >
                                         <label>
                                             Type message:
