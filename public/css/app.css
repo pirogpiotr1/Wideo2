@@ -11356,3 +11356,7 @@ a.text-dark:focus {
   }
 }
 
+.hide {
+  display: none;
+}
+

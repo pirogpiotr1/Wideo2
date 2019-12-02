@@ -3,9 +3,11 @@ import ReactDOM from 'react-dom';
 import MediaHandler from '../MediaHandler'
 import Pusher from 'pusher-js'
 import Peer from 'simple-peer'
+import bootbox from 'bootbox';
+
 
 const  API_KEY = '0f023d4e29ea60055ea7';
-const PRESENSE_CHANNEL = 'presence-channel'
+const PRESENSE_CHANNEL = 'presence-channel';
 class App extends React.Component{
     constructor(){
         super();
@@ -13,14 +15,18 @@ class App extends React.Component{
         this.state = {
             hasMedia: false,
             otherUserId:null,
-            showUsers:this.displayUser
+            showUsers:this.displayUser,
+            activeUsers:null,
+            hideVideo:null,
+            showMessanger:null,
+            messageVal:''
         };
 
         this.user = window.user;
         this.user.stream = null;
         this.peers = {};
         this.members = null;
-
+        this.connectedTo = null;
 
 
         this.mediaHandler = new MediaHandler();
@@ -29,7 +35,9 @@ class App extends React.Component{
         this.initPusher = this.initPusher.bind(this);
         this.setPeer = this.setPeer.bind(this);
         this.removeMember = this.removeMember.bind(this);
-       this.appendUsers = this.appendUsers.bind(this);
+         this.appendUsers = this.appendUsers.bind(this);
+        this.sendMessageHandler = this.sendMessageHandler.bind(this);
+        this.handleInputChange = this.handleInputChange.bind(this);
     }
     componentDidMount(){
 
@@ -64,20 +72,39 @@ class App extends React.Component{
         this.channel = this.pusher.subscribe( channelName );
 
         this.channel.bind('pusher:subscription_succeeded', (members)=> {
-           // let me = presenceChannel.members.me;
-            console.log('subscription');
-            if( this.channel.name === PRESENSE_CHANNEL) {
-                this.members = members;
-                this.appendUsers();
-            }
-
+            this.members = members;
+            this.appendUsers();
         });
 
         this.channel.bind('pusher:member_removed', ({id}) => {
-            this.appendUsers();
+
+            console.log( `this.connectedTo = ${this.connectedTo}`);
+            console.log(id);
+            if( this.peers[id] ){
+                this.removeMember(id);
+                let peer = this.peers[id];
+                if( peer !== undefined){
+                    peer.destroy();
+                }
+
+                this.peers[id] = undefined;
+                this.connectedTo = null;
+                this.appendUsers();
+                this.setState( {hideVideo:true });
+                this.setState({activeUsers:false});
+                this.setState( {showMessanger:false });
+            }else if( this.connectedTo === id ){
+                this.connectedTo = null;
+                this.appendUsers();
+                this.setState( {hideVideo:true });
+                this.setState({activeUsers:false});
+                this.setState( {showMessanger:false });
+            }
+            console.log('removed');
+
         });
         this.channel.bind('pusher:member_added', (member) =>{
-            console.log(this.peers);
+
             this.appendUsers();
         });
 
@@ -85,31 +112,42 @@ class App extends React.Component{
 
             let peer = this.peers[signal.userId];
             // jesli puste to znaczy ze ktos dzwoni do nas
-            if(peer === undefined){
-                let ask = window.confirm(`${this.members.members[signal.userId]['name']} want to connect, do you accept?`);
-                if(ask){
-                    this.setState({otherUserId: signal.userId});
-                    peer = this.setPeer(signal.userId, false);
-                }else{
-                    this.channel.trigger(`client-reject-${signal.userId}`,{
-                        type:'signal',
-                        userId:this.user.id
-                    });
-                }
 
+            if(peer === undefined) {
+                bootbox.confirm(`${this.members.members[signal.userId]['name']} want to connect, do you accept?`, (result) => {
+                    if (result) {
+
+                        this.setState({otherUserId: signal.userId});
+                        peer = this.setPeer(signal.userId, false);
+                        peer.signal(signal.data);
+                        this.connectedTo = signal.userId ;
+
+                    } else {
+                        this.channel.trigger(`client-reject-${signal.userId}`, {
+                            type: 'signal',
+                            userId: this.user.id
+                        });
+                    }
+                });
             }
+
             if(peer)
             peer.signal(signal.data);
 
           // this.appendUsers('empty');
         });
+
         this.channel.bind(`client-reject-${this.user.id}`,(signal) =>{
-            alert('reject');
+            alert(`${this.members.members[signal.userId]['name']} rejected your offer!`);
+        });
+
+        this.channel.bind(`client-send-message-${this.user.id}`,(signal) =>{
+            alert(`${this.members.members[signal.userId]['name']}!`);
         });
 
     }
     setPeer(userId,initiator = true,){
-    console.log('setPeer');
+
         const peer = new Peer({
             initiator,
             stream:this.user.stream,
@@ -131,6 +169,14 @@ class App extends React.Component{
             this.userVideo.play();
         });
 
+        peer.on('connect',(data) =>{
+            console.log(`${userId} connected`);
+            this.connectedTo = userId;
+            this.setState( { activeUsers: true } );
+            this.setState( { hideVideo:false } );
+            this.setState( { showMessanger:true } );
+        });
+
         peer.on('close',()=>{
             let peer = this.peers[userId];
             if(peer !== undefined){
@@ -141,7 +187,12 @@ class App extends React.Component{
 
             console.log('closed');
         });
-        peer.on('error', (err) => {console.log(err)})
+        peer.on('error', (err) => {console.log(err)});
+
+        peer.on('data', (data) => {
+           //TODO handle this
+
+        });
 
         return peer;
     }
@@ -155,13 +206,15 @@ class App extends React.Component{
 
         this.peers[id] = this.setPeer(id);
     }
-    removeMember(){
+    removeMember(id){
         this.members.count --;
+        delete this.members.members[id];
     }
 
     appendUsers($isEmpty = null){
 
         this.displayUser = [];
+
         if(!$isEmpty) {
             Object.keys(this.members.members).forEach((key, item) => {
                 if (this.user.id !== key) {
@@ -179,6 +232,25 @@ class App extends React.Component{
         if(!this.displayUser)
         return null;
     }
+    hideButtons(value){
+        return 'btn-con '+(( value === this.state.activeUsers ) ?'hide':'default');
+    }
+    hideVideoOnClosed(value){
+        return 'user-video '+(( value === this.state.hideVideo ) ?'hide':'default');
+    }
+    showMessangerCon(value){
+        return 'messanger-con '+(( value === this.state.showMessanger ) ?'default':'hide');
+    }
+
+    sendMessageHandler(event){
+        let peer = this.peers[this.connectedTo];
+        peer.send(this.state.messageVal);
+        event.preventDefault();
+    }
+    handleInputChange(event){
+        this.setState({messageVal: event.target.value});
+    }
+
     render() {
 
         return (
@@ -187,24 +259,33 @@ class App extends React.Component{
                     <div className="col-md-8">
                         <div className="card">
                             <div className="card-header">Wideo cont</div>
-                            {
-
-                                this.displayUser.map((row,id)=>{
-                                   return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
-                               })
-                            }
-
+                                <div className={this.hideButtons(true)}>
+                                {
+                                    this.displayUser.map((row,id)=>{
+                                       return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
+                                   })
+                                }
+                            </div>
                             <div className="card-body">
                                 <div className="video-inner">
                                     <div className="video-wrapper">
                                         <video className="my-video" ref={(ref) => {
                                             this.myVideo = ref;
                                         }}></video>
-                                        <video className="user-video" ref={(ref) => {
+                                        <video className={this.hideVideoOnClosed(true)} ref={(ref) => {
                                             this.userVideo = ref;
                                         }}></video>
                                     </div>
+                                </div>
+                                <div className={this.showMessangerCon(true)}>
 
+                                    <form >
+                                        <label>
+                                            Type message:
+                                            <input type="text" value={this.state.messageVal} onChange={this.handleInputChange} />
+                                        </label>
+                                        <input type="button" onClick={this.sendMessageHandler} value="Send" />
+                                    </form>
                                 </div>
                             </div>
                         </div>
