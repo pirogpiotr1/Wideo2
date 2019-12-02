@@ -5,7 +5,7 @@ import Pusher from 'pusher-js'
 import Peer from 'simple-peer'
 
 const  API_KEY = '0f023d4e29ea60055ea7';
-
+const PRESENSE_CHANNEL = 'presence-channel'
 class App extends React.Component{
     constructor(){
         super();
@@ -29,7 +29,7 @@ class App extends React.Component{
         this.initPusher = this.initPusher.bind(this);
         this.setPeer = this.setPeer.bind(this);
         this.removeMember = this.removeMember.bind(this);
-        this.appendUsers = this.appendUsers.bind(this);
+       this.appendUsers = this.appendUsers.bind(this);
     }
     componentDidMount(){
 
@@ -42,7 +42,7 @@ class App extends React.Component{
                 this.myVideo.play();
             });
     }
-    initPusher(){
+    initPusher(channelName = PRESENSE_CHANNEL){
 
         this.pusher = new Pusher(API_KEY,{
             authEndpoint:'/pusher/auth',
@@ -56,36 +56,60 @@ class App extends React.Component{
 
             }
         });
-        this.channel = this.pusher.subscribe('presence-channel');
+
+        if( channelName !== PRESENSE_CHANNEL){
+            this.channel.unsubscribe(PRESENSE_CHANNEL);
+        }
+
+        this.channel = this.pusher.subscribe( channelName );
+
         this.channel.bind('pusher:subscription_succeeded', (members)=> {
            // let me = presenceChannel.members.me;
-            this.members = members;
-            this.appendUsers();
+            console.log('subscription');
+            if( this.channel.name === PRESENSE_CHANNEL) {
+                this.members = members;
+                this.appendUsers();
+            }
+
         });
 
         this.channel.bind('pusher:member_removed', ({id}) => {
-            // for example:
-            this.removeMember();
+            this.appendUsers();
         });
-        this.channel.bind('pusher:member_added', function(member) {
-          //  channel_members.push({id, info});
+        this.channel.bind('pusher:member_added', (member) =>{
+            console.log(this.peers);
+            this.appendUsers();
         });
 
         this.channel.bind(`client-signal-${this.user.id}`,(signal)=>{
-            let peer = this.peers[signal.userId];
 
-            console.log(signal.userId);
+            let peer = this.peers[signal.userId];
             // jesli puste to znaczy ze ktos dzwoni do nas
             if(peer === undefined){
-                this.setState({otherUserId:signal.userId});
-                peer = this.setPeer(signal.userId,false);
+                let ask = window.confirm(`${this.members.members[signal.userId]['name']} want to connect, do you accept?`);
+                if(ask){
+                    this.setState({otherUserId: signal.userId});
+                    peer = this.setPeer(signal.userId, false);
+                }else{
+                    this.channel.trigger(`client-reject-${signal.userId}`,{
+                        type:'signal',
+                        userId:this.user.id
+                    });
+                }
+
             }
+            if(peer)
             peer.signal(signal.data);
+
+          // this.appendUsers('empty');
+        });
+        this.channel.bind(`client-reject-${this.user.id}`,(signal) =>{
+            alert('reject');
         });
 
     }
-    setPeer(userId,initiator = true){
-
+    setPeer(userId,initiator = true,){
+    console.log('setPeer');
         const peer = new Peer({
             initiator,
             stream:this.user.stream,
@@ -93,12 +117,11 @@ class App extends React.Component{
         });
 
         peer.on('signal',(data)=>{
-            console.log(`client-signal-${userId}`);
             this.channel.trigger(`client-signal-${userId}`,{
                 type:'signal',
                 userId:this.user.id,
                 data:data
-            })
+            });
         });
 
         peer.on('stream',(stream) =>{
@@ -107,33 +130,54 @@ class App extends React.Component{
             this.userVideo.srcObject = stream;
             this.userVideo.play();
         });
+
         peer.on('close',()=>{
             let peer = this.peers[userId];
             if(peer !== undefined){
                 peer.destroy();
             }
+
             this.peers[userId] = undefined;
+
+            console.log('closed');
         });
+        peer.on('error', (err) => {console.log(err)})
 
         return peer;
     }
     callTo(userId){
-        this.peers[userId['row']] = this.setPeer(userId['row']);
+        let id = null;
+        if(typeof(userId) === 'object' ){
+            id = userId['row'];
+        }else{
+            id = userId;
+        }
+
+        this.peers[id] = this.setPeer(id);
     }
     removeMember(){
         this.members.count --;
     }
-    appendUsers(){
 
-        Object.keys(this.members.members).forEach((key,item) =>{
-            if(this.user.id !== key){
-                this.displayUser.push(key) ;
-            }
-        });
+    appendUsers($isEmpty = null){
+
+        this.displayUser = [];
+        if(!$isEmpty) {
+            Object.keys(this.members.members).forEach((key, item) => {
+                if (this.user.id !== key) {
+                    this.displayUser.push(key);
+                }
+            });
+        }else{
+            this.displayUser = [];
+        }
 
         this.setState({
             showUsers: this.displayUser,
-        })
+        });
+
+        if(!this.displayUser)
+        return null;
     }
     render() {
 
@@ -143,9 +187,12 @@ class App extends React.Component{
                     <div className="col-md-8">
                         <div className="card">
                             <div className="card-header">Wideo cont</div>
-                            {this.displayUser.map((row,id)=>{
-                                return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
-                            })}
+                            {
+
+                                this.displayUser.map((row,id)=>{
+                                   return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
+                               })
+                            }
 
                             <div className="card-body">
                                 <div className="video-inner">

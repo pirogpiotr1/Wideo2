@@ -83562,6 +83562,7 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 var API_KEY = '0f023d4e29ea60055ea7';
+var PRESENSE_CHANNEL = 'presence-channel';
 
 var App =
 /*#__PURE__*/
@@ -83618,6 +83619,7 @@ function (_React$Component) {
     value: function initPusher() {
       var _this3 = this;
 
+      var channelName = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : PRESENSE_CHANNEL;
       this.pusher = new pusher_js__WEBPACK_IMPORTED_MODULE_3___default.a(API_KEY, {
         authEndpoint: '/pusher/auth',
         cluster: 'eu',
@@ -83629,34 +83631,56 @@ function (_React$Component) {
           }
         }
       });
-      this.channel = this.pusher.subscribe('presence-channel');
+
+      if (channelName !== PRESENSE_CHANNEL) {
+        this.channel.unsubscribe(PRESENSE_CHANNEL);
+      }
+
+      this.channel = this.pusher.subscribe(channelName);
       this.channel.bind('pusher:subscription_succeeded', function (members) {
         // let me = presenceChannel.members.me;
-        _this3.members = members;
+        console.log('subscription');
 
-        _this3.appendUsers();
+        if (_this3.channel.name === PRESENSE_CHANNEL) {
+          _this3.members = members;
+
+          _this3.appendUsers();
+        }
       });
       this.channel.bind('pusher:member_removed', function (_ref) {
         var id = _ref.id;
 
-        // for example:
-        _this3.removeMember();
+        _this3.appendUsers();
       });
-      this.channel.bind('pusher:member_added', function (member) {//  channel_members.push({id, info});
+      this.channel.bind('pusher:member_added', function (member) {
+        console.log(_this3.peers);
+
+        _this3.appendUsers();
       });
       this.channel.bind("client-signal-".concat(this.user.id), function (signal) {
-        var peer = _this3.peers[signal.userId];
-        console.log(signal.userId); // jesli puste to znaczy ze ktos dzwoni do nas
+        var peer = _this3.peers[signal.userId]; // jesli puste to znaczy ze ktos dzwoni do nas
 
         if (peer === undefined) {
-          _this3.setState({
-            otherUserId: signal.userId
-          });
+          var ask = window.confirm("".concat(_this3.members.members[signal.userId]['name'], " want to connect, do you accept?"));
 
-          peer = _this3.setPeer(signal.userId, false);
+          if (ask) {
+            _this3.setState({
+              otherUserId: signal.userId
+            });
+
+            peer = _this3.setPeer(signal.userId, false);
+          } else {
+            _this3.channel.trigger("client-reject-".concat(signal.userId), {
+              type: 'signal',
+              userId: _this3.user.id
+            });
+          }
         }
 
-        peer.signal(signal.data);
+        if (peer) peer.signal(signal.data); // this.appendUsers('empty');
+      });
+      this.channel.bind("client-reject-".concat(this.user.id), function (signal) {
+        alert('reject');
       });
     }
   }, {
@@ -83665,14 +83689,13 @@ function (_React$Component) {
       var _this4 = this;
 
       var initiator = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+      console.log('setPeer');
       var peer = new simple_peer__WEBPACK_IMPORTED_MODULE_4___default.a({
         initiator: initiator,
         stream: this.user.stream,
         trickle: false
       });
       peer.on('signal', function (data) {
-        console.log("client-signal-".concat(userId));
-
         _this4.channel.trigger("client-signal-".concat(userId), {
           type: 'signal',
           userId: _this4.user.id,
@@ -83694,13 +83717,25 @@ function (_React$Component) {
         }
 
         _this4.peers[userId] = undefined;
+        console.log('closed');
+      });
+      peer.on('error', function (err) {
+        console.log(err);
       });
       return peer;
     }
   }, {
     key: "callTo",
     value: function callTo(userId) {
-      this.peers[userId['row']] = this.setPeer(userId['row']);
+      var id = null;
+
+      if (_typeof(userId) === 'object') {
+        id = userId['row'];
+      } else {
+        id = userId;
+      }
+
+      this.peers[id] = this.setPeer(id);
     }
   }, {
     key: "removeMember",
@@ -83712,14 +83747,23 @@ function (_React$Component) {
     value: function appendUsers() {
       var _this5 = this;
 
-      Object.keys(this.members.members).forEach(function (key, item) {
-        if (_this5.user.id !== key) {
-          _this5.displayUser.push(key);
-        }
-      });
+      var $isEmpty = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+      this.displayUser = [];
+
+      if (!$isEmpty) {
+        Object.keys(this.members.members).forEach(function (key, item) {
+          if (_this5.user.id !== key) {
+            _this5.displayUser.push(key);
+          }
+        });
+      } else {
+        this.displayUser = [];
+      }
+
       this.setState({
         showUsers: this.displayUser
       });
+      if (!this.displayUser) return null;
     }
   }, {
     key: "render",
