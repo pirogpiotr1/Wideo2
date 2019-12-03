@@ -28,6 +28,7 @@
         "bootbox": "^5.3.4",
         "pusher-js": "^5.0.3",
         "react-bootbox": "^1.1.1",
+        "react-scroll": "^1.7.14",
         "simple-peer": "^9.6.2"
     }
 }

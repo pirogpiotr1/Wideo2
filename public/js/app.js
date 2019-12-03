@@ -84967,6 +84967,7 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(App).call(this));
     _this.displayUser = [];
+    _this.messages = [];
     _this.state = {
       hasMedia: false,
       otherUserId: null,
@@ -84975,8 +84976,9 @@ function (_React$Component) {
       hideVideo: null,
       showMessanger: null,
       messageVal: '',
-      appendDOM: ''
+      appendDOM: []
     };
+    _this.mesRef = react__WEBPACK_IMPORTED_MODULE_0___default.a.createRef();
     _this.user = window.user;
     _this.user.stream = null;
     _this.peers = {};
@@ -84993,6 +84995,7 @@ function (_React$Component) {
     _this.appendUsers = _this.appendUsers.bind(_assertThisInitialized(_this));
     _this.sendMessageHandler = _this.sendMessageHandler.bind(_assertThisInitialized(_this));
     _this.handleInputChange = _this.handleInputChange.bind(_assertThisInitialized(_this));
+    _this.leaveRoom = _this.leaveRoom.bind(_assertThisInitialized(_this));
     return _this;
   }
 
@@ -85012,6 +85015,7 @@ function (_React$Component) {
 
         _this2.myVideo.play();
       });
+      this.scrollToBottom();
     }
   }, {
     key: "initPusher",
@@ -85042,11 +85046,12 @@ function (_React$Component) {
         _this3.appendUsers();
       });
       this.channel.bind('pusher:member_removed', function (_ref) {
-        var id = _ref.id;
-        console.log("this.connectedTo = ".concat(_this3.connectedTo));
-        console.log(id);
+        var id = _ref.id,
+            info = _ref.info;
 
         if (_this3.peers[id]) {
+          if (id !== _this3.user.id) alert("".concat(info.name, " disconnected!"));
+
           _this3.removeMember(id);
 
           var peer = _this3.peers[id];
@@ -85071,7 +85076,11 @@ function (_React$Component) {
           _this3.setState({
             showMessanger: false
           });
+
+          _this3.messages = [];
+          _this3.state.appendDOM = [];
         } else if (_this3.connectedTo === id) {
+          if (id !== _this3.user.id) alert("".concat(info.name, " disconnected!"));
           _this3.connectedTo = null;
 
           _this3.appendUsers();
@@ -85087,6 +85096,9 @@ function (_React$Component) {
           _this3.setState({
             showMessanger: false
           });
+
+          _this3.messages = [];
+          _this3.state.appendDOM = [];
         }
 
         console.log('removed');
@@ -85105,6 +85117,7 @@ function (_React$Component) {
               });
 
               peer = _this3.setPeer(signal.userId, false);
+              _this3.peers[signal.userId] = peer;
               peer.signal(signal.data);
               _this3.connectedTo = signal.userId;
             } else {
@@ -85120,6 +85133,9 @@ function (_React$Component) {
       });
       this.channel.bind("client-reject-".concat(this.user.id), function (signal) {
         alert("".concat(_this3.members.members[signal.userId]['name'], " rejected your offer!"));
+      });
+      this.channel.bind("client-left-".concat(this.user.id), function (signal) {
+        if (signal.userId !== _this3.user.id) alert("".concat(_this3.members.members[signal.userId]['name'], " left room!"));
       });
     }
   }, {
@@ -85164,6 +85180,7 @@ function (_React$Component) {
         });
       });
       peer.on('close', function () {
+        console.log(userId);
         var peer = _this4.peers[userId];
 
         if (peer !== undefined) {
@@ -85171,13 +85188,34 @@ function (_React$Component) {
         }
 
         _this4.peers[userId] = undefined;
-        console.log('closed');
+        _this4.connectedTo = null;
+
+        _this4.appendUsers();
+
+        _this4.setState({
+          hideVideo: true
+        });
+
+        _this4.setState({
+          activeUsers: false
+        });
+
+        _this4.setState({
+          showMessanger: false
+        });
+
+        _this4.messages = [];
+        _this4.state.appendDOM = [];
       });
       peer.on('error', function (err) {
         console.log(err);
       });
       peer.on('data', function (data) {
-        _this4.appendMessage(data);
+        _this4.appendMessage({
+          'content': '' + data,
+          'owner': 'other',
+          'name': _this4.members.members[_this4.connectedTo]['name']
+        });
       });
       return peer;
     }
@@ -85231,7 +85269,7 @@ function (_React$Component) {
   }, {
     key: "hideVideoOnClosed",
     value: function hideVideoOnClosed(value) {
-      return 'user-video ' + (value === this.state.hideVideo ? 'hide' : 'default');
+      return 'user-video ' + (value === this.state.hideVideo ? '' : 'default');
     }
   }, {
     key: "showMessangerCon",
@@ -85241,9 +85279,50 @@ function (_React$Component) {
   }, {
     key: "sendMessageHandler",
     value: function sendMessageHandler(event) {
-      var peer = this.peers[this.connectedTo];
-      peer.send(this.state.messageVal);
-      event.preventDefault();
+      if (this.state.messageVal) {
+        var peer = this.peers[this.connectedTo];
+        peer.send(this.state.messageVal);
+        this.appendMessage({
+          'content': this.state.messageVal,
+          'owner': 'my',
+          'name': this.user.name
+        });
+        this.setState({
+          messageVal: ''
+        });
+      }
+    }
+  }, {
+    key: "leaveRoom",
+    value: function leaveRoom() {
+      var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.connectedTo;
+
+      if (this.peers[id]) {
+        this.channel.trigger("client-left-".concat(id), {
+          type: 'signal',
+          userId: this.user.id
+        });
+        var peer = this.peers[id];
+
+        if (peer !== undefined) {
+          peer.destroy();
+        }
+
+        this.peers[id] = undefined;
+        this.connectedTo = null;
+        this.setState({
+          hideVideo: true
+        });
+        this.setState({
+          activeUsers: false
+        });
+        this.setState({
+          showMessanger: false
+        });
+        this.appendUsers();
+        this.messages = [];
+        this.state.appendDOM = [];
+      }
     }
   }, {
     key: "handleInputChange",
@@ -85255,39 +85334,40 @@ function (_React$Component) {
   }, {
     key: "appendMessage",
     value: function appendMessage(message) {
-      alert(message);
+      var _this6 = this;
+
+      this.messages.push(message);
       this.setState({
-        appendDOM: message
+        appendDOM: this.messages
+      }, function () {
+        _this6.scrollToBottom();
       });
+    }
+  }, {
+    key: "messageClass",
+    value: function messageClass(el) {
+      return 'message ' + el;
+    }
+  }, {
+    key: "scrollToBottom",
+    value: function scrollToBottom() {
+      this.mesRef.current.scrollTop = this.mesRef.current.scrollHeight;
     }
   }, {
     key: "render",
     value: function render() {
-      var _this6 = this;
+      var _this7 = this;
 
       return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "container"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "row justify-content-center"
+        className: "main-wideo-con--inner"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-md-8"
+        className: "main-wideo-con--wrapper"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "card"
-      }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "card-header"
-      }, "Wideo cont"), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: this.hideButtons(true)
-      }, this.displayUser.map(function (row, id) {
-        return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          onClick: function onClick() {
-            _this6.callTo({
-              row: row
-            });
-          },
-          key: row
-        }, " ", _this6.members.members[row]['name'], "  ", row, "  ");
-      })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "card-body"
+        className: "card-header width100 "
+      }, "Video chat"), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "main-body"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "video-inner"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -85295,16 +85375,51 @@ function (_React$Component) {
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("video", {
         className: "my-video",
         ref: function ref(_ref2) {
-          _this6.myVideo = _ref2;
+          _this7.myVideo = _ref2;
         }
       }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("video", {
         className: this.hideVideoOnClosed(true),
         ref: function ref(_ref3) {
-          _this6.userVideo = _ref3;
+          _this7.userVideo = _ref3;
         }
       }))), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: this.hideButtons(true)
+      }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "btn-con-header"
+      }, "Active users"), this.displayUser.map(function (row, id) {
+        return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          onClick: function onClick() {
+            _this7.callTo({
+              row: row
+            });
+          },
+          key: row
+        }, " ", _this7.members.members[row]['name'], "  ", row, "  ");
+      })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: this.showMessangerCon(true)
-      }, this.state.appendDOM ? react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, this.state.appendDOM) : '', react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", null, "Type message:", react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
+      }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "btn-con-header"
+      }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
+        type: "button",
+        onClick: function onClick() {
+          return _this7.leaveRoom();
+        },
+        value: "Leave room"
+      })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "btn-con-header"
+      }, "Messages"), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "messages-true-con",
+        ref: this.mesRef
+      }, this.state.appendDOM ? this.state.appendDOM.map(function (d, id) {
+        return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: _this7.messageClass(d.owner),
+          key: id
+        }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "name"
+        }, d.name), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: d.owner
+        }, d.content));
+      }) : ''), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", null, "Type message:", react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
         type: "text",
         value: this.state.messageVal,
         onChange: this.handleInputChange
@@ -85312,7 +85427,7 @@ function (_React$Component) {
         type: "button",
         onClick: this.sendMessageHandler,
         value: "Send"
-      }))))))));
+      })))))));
     }
   }]);
 

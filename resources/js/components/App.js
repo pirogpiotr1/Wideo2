@@ -6,12 +6,14 @@ import Peer from 'simple-peer'
 import bootbox from 'bootbox';
 
 
+
 const  API_KEY = '0f023d4e29ea60055ea7';
 const PRESENSE_CHANNEL = 'presence-channel';
 class App extends React.Component{
     constructor(){
         super();
         this.displayUser =  [];
+        this.messages = [];
         this.state = {
             hasMedia: false,
             otherUserId:null,
@@ -20,8 +22,10 @@ class App extends React.Component{
             hideVideo:null,
             showMessanger:null,
             messageVal:'',
-            appendDOM:''
+            appendDOM:[]
+
         };
+        this.mesRef = React.createRef();
 
         this.user = window.user;
         this.user.stream = null;
@@ -39,6 +43,8 @@ class App extends React.Component{
          this.appendUsers = this.appendUsers.bind(this);
         this.sendMessageHandler = this.sendMessageHandler.bind(this);
         this.handleInputChange = this.handleInputChange.bind(this);
+        this.leaveRoom = this.leaveRoom.bind(this);
+
     }
     componentDidMount(){
 
@@ -50,6 +56,7 @@ class App extends React.Component{
                 this.myVideo.srcObject = stream;
                 this.myVideo.play();
             });
+        this.scrollToBottom();
     }
     initPusher(channelName = PRESENSE_CHANNEL){
 
@@ -77,11 +84,13 @@ class App extends React.Component{
             this.appendUsers();
         });
 
-        this.channel.bind('pusher:member_removed', ({id}) => {
+        this.channel.bind('pusher:member_removed', ({id,info}) => {
 
-            console.log( `this.connectedTo = ${this.connectedTo}`);
-            console.log(id);
             if( this.peers[id] ){
+
+                if(id !== this.user.id )
+                    alert(`${info.name} disconnected!`);
+
                 this.removeMember(id);
                 let peer = this.peers[id];
                 if( peer !== undefined){
@@ -94,12 +103,22 @@ class App extends React.Component{
                 this.setState( {hideVideo:true });
                 this.setState({activeUsers:false});
                 this.setState( {showMessanger:false });
+                this.messages = [];
+                this.state.appendDOM = [];
+
             }else if( this.connectedTo === id ){
+
+                if(id !== this.user.id )
+                    alert(`${info.name} disconnected!`);
+
                 this.connectedTo = null;
+
                 this.appendUsers();
                 this.setState( {hideVideo:true });
                 this.setState({activeUsers:false});
                 this.setState( {showMessanger:false });
+                this.messages = [];
+                this.state.appendDOM = [];
             }
             console.log('removed');
 
@@ -120,8 +139,10 @@ class App extends React.Component{
 
                         this.setState({otherUserId: signal.userId});
                         peer = this.setPeer(signal.userId, false);
+                        this.peers[signal.userId] = peer;
                         peer.signal(signal.data);
                         this.connectedTo = signal.userId ;
+
 
                     } else {
                         this.channel.trigger(`client-reject-${signal.userId}`, {
@@ -140,6 +161,11 @@ class App extends React.Component{
 
         this.channel.bind(`client-reject-${this.user.id}`,(signal) =>{
             alert(`${this.members.members[signal.userId]['name']} rejected your offer!`);
+        });
+
+        this.channel.bind(`client-left-${this.user.id}`,(signal) =>{
+            if(signal.userId !== this.user.id )
+              alert(`${this.members.members[signal.userId]['name']} left room!`);
         });
 
     }
@@ -175,19 +201,33 @@ class App extends React.Component{
         });
 
         peer.on('close',()=>{
+            console.log(userId);
             let peer = this.peers[userId];
+
             if(peer !== undefined){
                 peer.destroy();
             }
 
             this.peers[userId] = undefined;
+            this.connectedTo = null;
+            this.appendUsers();
+            this.setState({hideVideo: true});
+            this.setState({activeUsers: false});
+            this.setState({showMessanger: false});
 
-            console.log('closed');
+            this.messages = [];
+            this.state.appendDOM = [];
+
         });
+
         peer.on('error', (err) => {console.log(err)});
 
         peer.on('data', (data) => {
-            this.appendMessage(data);
+            this.appendMessage({
+                'content':''+data,
+                'owner':'other',
+                'name':this.members.members[this.connectedTo]['name']
+            });
         });
 
         return peer;
@@ -232,42 +272,77 @@ class App extends React.Component{
         return 'btn-con '+(( value === this.state.activeUsers ) ?'hide':'default');
     }
     hideVideoOnClosed(value){
-        return 'user-video '+(( value === this.state.hideVideo ) ?'hide':'default');
+        return 'user-video '+(( value === this.state.hideVideo ) ?'':'default');
     }
     showMessangerCon(value){
         return 'messanger-con '+(( value === this.state.showMessanger ) ?'default':'hide');
     }
 
     sendMessageHandler(event){
-        let peer = this.peers[this.connectedTo];
-        peer.send(this.state.messageVal);
-        event.preventDefault();
+        if(this.state.messageVal) {
+            let peer = this.peers[this.connectedTo];
+            peer.send(this.state.messageVal);
+            this.appendMessage({
+                'content': this.state.messageVal,
+                'owner': 'my',
+                'name': this.user.name
+            });
+            this.setState({messageVal: ''});
+
+
+        }
+    }
+    leaveRoom(id =  this.connectedTo ){
+
+        if( this.peers[id] ) {
+
+            this.channel.trigger(`client-left-${id}`, {
+                type: 'signal',
+                userId: this.user.id
+            });
+
+            let peer = this.peers[id];
+            if (peer !== undefined) {
+                peer.destroy();
+            }
+
+            this.peers[id] = undefined;
+            this.connectedTo = null;
+
+            this.setState({hideVideo: true});
+            this.setState({activeUsers: false});
+            this.setState({showMessanger: false});
+            this.appendUsers();
+            this.messages = [];
+            this.state.appendDOM = [];
+        }
     }
     handleInputChange(event){
-        this.setState({messageVal: event.target.value});
+       this.setState({messageVal: event.target.value});
     }
     appendMessage(message){
-        alert(message);
+        this.messages.push(message);
 
-        this.setState({appendDOM:message});
+        this.setState({appendDOM: this.messages },
+            () => {
+                this.scrollToBottom();
+            }
+            );
 
     }
+    messageClass(el){
+        return 'message '+ (el);
+    }
+    scrollToBottom() {
+        this.mesRef.current.scrollTop = this.mesRef.current.scrollHeight;
+    }
     render() {
-
         return (
             <div className="container">
-                <div className="row justify-content-center">
-                    <div className="col-md-8">
-                        <div className="card">
-                            <div className="card-header">Wideo cont</div>
-                                <div className={this.hideButtons(true)}>
-                                {
-                                    this.displayUser.map((row,id)=>{
-                                       return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
-                                   })
-                                }
-                            </div>
-                            <div className="card-body">
+                <div className="main-wideo-con--inner">
+                    <div className="main-wideo-con--wrapper">
+                            <div className="card-header width100 ">Video chat</div>
+                            <div className="main-body">
                                 <div className="video-inner">
                                     <div className="video-wrapper">
                                         <video className="my-video" ref={(ref) => {
@@ -278,13 +353,35 @@ class App extends React.Component{
                                         }}></video>
                                     </div>
                                 </div>
-                                <div className={this.showMessangerCon(true)}>
+                                <div className={this.hideButtons(true)}>
+                                    <div className="btn-con-header">Active users</div>
                                     {
-                                        this.state.appendDOM ?
-                                            <div>{ this.state.appendDOM}</div>
-                                            :
-                                            ''
+                                        this.displayUser.map((row,id)=>{
+                                            return  <button onClick={() =>{this.callTo({row} )}} key={row}> {this.members.members[row]['name']}  {row}  </button>
+                                        })
                                     }
+                                </div>
+                                <div className={this.showMessangerCon(true)}>
+                                    <div className="btn-con-header">
+                                      <input type="button" onClick={() => this.leaveRoom()} value = "Leave room" />
+                                    </div>
+                                    <div className="btn-con-header">Messages</div>
+                                        <div className="messages-true-con" ref={this.mesRef}>
+                                        {
+                                            this.state.appendDOM?
+
+                                                this.state.appendDOM.map((d, id)=>{
+                                                    return (
+                                                        <div className={this.messageClass(d.owner)} key={id}>
+                                                            <div className="name" >{d.name}</div>
+                                                            <div className={d.owner} >{d.content}</div>
+                                                        </div>
+                                                    )
+                                                })
+                                            :''
+                                    }
+
+                                        </div>
                                     <form >
                                         <label>
                                             Type message:
@@ -293,8 +390,8 @@ class App extends React.Component{
                                         <input type="button" onClick={this.sendMessageHandler} value="Send" />
                                     </form>
                                 </div>
+
                             </div>
-                        </div>
                     </div>
                 </div>
             </div>
