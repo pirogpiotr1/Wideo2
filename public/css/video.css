@@ -177,3 +177,25 @@ body{
 .navbar-light .navbar-brand:hover, .navbar-light .navbar-brand:focus {
     color:#fff;
 }
+@media (max-width: 1024px) {
+    .btn-con.default,
+    .messanger-con{
+        width: 100%;
+        max-width: 100%;
+    }
+    .messages-true-con {
+        min-height: 200px;
+        max-height: 200px}
+    .user-video
+    {
+        border-right: 0;
+    }
+    .width100, .btn-con > button {
+
+        border-bottom: none;
+
+    }
+    .my-video{
+        max-width: 50px;
+    }
+}
