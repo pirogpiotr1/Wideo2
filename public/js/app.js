@@ -84974,6 +84974,7 @@ function (_React$Component) {
       showUsers: _this.displayUser,
       activeUsers: null,
       hideVideo: null,
+      hideSub: null,
       showMessanger: null,
       messageVal: '',
       appendDOM: []
@@ -85178,6 +85179,10 @@ function (_React$Component) {
         _this4.setState({
           showMessanger: true
         });
+
+        _this4.setState({
+          hideSub: true
+        });
       });
       peer.on('close', function () {
         console.log(userId);
@@ -85202,6 +85207,10 @@ function (_React$Component) {
 
         _this4.setState({
           showMessanger: false
+        });
+
+        _this4.setState({
+          hideSub: false
         });
 
         _this4.messages = [];
@@ -85267,6 +85276,11 @@ function (_React$Component) {
       return 'btn-con ' + (value === this.state.activeUsers ? 'hide' : 'default');
     }
   }, {
+    key: "hideSub",
+    value: function hideSub(value) {
+      return 'video-wrapper ' + (value === this.state.hideSub ? ' hide-before' : '');
+    }
+  }, {
     key: "hideVideoOnClosed",
     value: function hideVideoOnClosed(value) {
       return 'user-video ' + (value === this.state.hideVideo ? '' : 'default');
@@ -85312,6 +85326,9 @@ function (_React$Component) {
         this.connectedTo = null;
         this.setState({
           hideVideo: true
+        });
+        this.setState({
+          hideSub: false
         });
         this.setState({
           activeUsers: false
@@ -85365,13 +85382,13 @@ function (_React$Component) {
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "main-wideo-con--wrapper"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "card-header width100 "
+        className: "card-header width100 color-white bg-own"
       }, "Video chat"), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "main-body"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "video-inner"
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "video-wrapper"
+        className: this.hideSub(true)
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("video", {
         className: "my-video",
         ref: function ref(_ref2) {
@@ -85439,6 +85456,15 @@ function (_React$Component) {
 if (document.getElementById('app')) {
   react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render(react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(App, null), document.getElementById('app'));
 }
+
+window.addEventListener('keydown', function (e) {
+  if (e.keyIdentifier == 'U+000A' || e.keyIdentifier == 'Enter' || e.keyCode == 13) {
+    if (e.target.nodeName == 'INPUT' && e.target.type == 'text') {
+      e.preventDefault();
+      return false;
+    }
+  }
+}, true);
 
 /***/ }),
 

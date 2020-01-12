@@ -3,26 +3,45 @@
 }
 .my-video{
     border: 1px solid #ccc;
+border-top:none;
+    border-left: none;
     position: absolute;
     top: 0;
     left: 0;
-    box-shadow: 1px 1px 5px 0px #ccc;
     max-width: 200px;
 }
 .user-video{
     border: 1px solid #ccc;
-    box-shadow: 1px 1px 5px 0px #ccc;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 5px;
+    border-top-left-radius: unset;
+    border-top-right-radius: unset;
     width: 100%;display: block;
+    background: #fff;
 }
 
 .width100,
 .btn-con > button{
     width: 100%;
+    background: #fff;
+    border:none;
+    border-bottom: 1px solid #eb4034;
+    color:#eb4034;
+    transition: 0.3s color;
+}
+.btn-con > button:hover{
+    background: #eb4034;
+    border:none;
+    color:#fff;
 }
 .main-wideo-con--inner{
     border: 1px solid #ccc;
+    border-radius: 5px;
 }
 .btn-con{
+    border-radius: 5px;
+    background: #fff;
     width: 25%;
 }
 .video-inner,
@@ -34,9 +53,40 @@
     flex-wrap: wrap;
 }
 .btn-con-header{
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: #eb4034;
     border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
     padding: 10px 20px;
+    color:#fff;
+}
+.btn-con-header > input{
+    background-color: #fff;
+    color: #eb4034;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    color:#eb4034;
+    transition: 0.3s color;
+    width: 100%;
+}
+.btn-con-header > input:hover{
+    background-color: #eb4034;
+    color:#fff;
+}
+.messanger-con.default input[type="text"]{
+    width: 100%;
+}
+.messanger-con.default input[type="button"]{
+    width: 100%; background-color: #eb4034;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    color:#fff;
+    transition: 0.3s color;
+    width: 100%;
+}
+.messanger-con.default input[type="button"]:hover{
+    background-color: #fff;
+    color: #eb4034;
+
 }
 .messanger-con{
     max-width: 25%;
@@ -95,4 +145,35 @@
 .message.my{
     justify-content: flex-start;
     text-align: left;
+}
+.bg-own{
+    background: #eb4034;
+}
+.color-white{
+    color:#fff !important;
+}
+.color-white > * {
+    color:#fff;
+}
+.video-wrapper::before{
+    content: "Other user video container";
+    position: absolute;
+    color:#eb4034;
+    top:50%;
+    left: 50%;
+    transform: translate(-50%,50%);
+    font-size: 1.125rem;
+    z-index: 5;
+}
+.video-wrapper.hide-before::before{
+    display: none;
+}
+body{
+    font-size: 1.125rem;
+}
+.navbar-light .navbar-nav .nav-link{
+    color:#fff;
+}
+.navbar-light .navbar-brand:hover, .navbar-light .navbar-brand:focus {
+    color:#fff;
 }

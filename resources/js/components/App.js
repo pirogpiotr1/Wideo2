@@ -20,6 +20,7 @@ class App extends React.Component{
             showUsers:this.displayUser,
             activeUsers:null,
             hideVideo:null,
+            hideSub: null,
             showMessanger:null,
             messageVal:'',
             appendDOM:[]
@@ -198,6 +199,8 @@ class App extends React.Component{
             this.setState( { activeUsers: true } );
             this.setState( { hideVideo:false } );
             this.setState( { showMessanger:true } );
+            this.setState( { hideSub:true } );
+
         });
 
         peer.on('close',()=>{
@@ -214,6 +217,7 @@ class App extends React.Component{
             this.setState({hideVideo: true});
             this.setState({activeUsers: false});
             this.setState({showMessanger: false});
+            this.setState( { hideSub:false } );
 
             this.messages = [];
             this.state.appendDOM = [];
@@ -271,6 +275,9 @@ class App extends React.Component{
     hideButtons(value){
         return 'btn-con '+(( value === this.state.activeUsers ) ?'hide':'default');
     }
+    hideSub(value){
+        return 'video-wrapper '+(( value === this.state.hideSub ) ?' hide-before':'');
+    }
     hideVideoOnClosed(value){
         return 'user-video '+(( value === this.state.hideVideo ) ?'':'default');
     }
@@ -310,6 +317,7 @@ class App extends React.Component{
             this.connectedTo = null;
 
             this.setState({hideVideo: true});
+            this.setState({hideSub: false});
             this.setState({activeUsers: false});
             this.setState({showMessanger: false});
             this.appendUsers();
@@ -341,10 +349,10 @@ class App extends React.Component{
             <div className="container">
                 <div className="main-wideo-con--inner">
                     <div className="main-wideo-con--wrapper">
-                            <div className="card-header width100 ">Video chat</div>
+                            <div className="card-header width100 color-white bg-own">Video chat</div>
                             <div className="main-body">
                                 <div className="video-inner">
-                                    <div className="video-wrapper">
+                                    <div className={this.hideSub(true)}>
                                         <video className="my-video" ref={(ref) => {
                                             this.myVideo = ref;
                                         }}></video>
@@ -404,3 +412,4 @@ export default App;
 if (document.getElementById('app')) {
     ReactDOM.render(<App />, document.getElementById('app'));
 }
+window.addEventListener('keydown',function(e){if(e.keyIdentifier=='U+000A'||e.keyIdentifier=='Enter'||e.keyCode==13){if(e.target.nodeName=='INPUT'&&e.target.type=='text'){e.preventDefault();return false;}}},true);
