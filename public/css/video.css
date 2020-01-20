@@ -177,6 +177,9 @@ body{
 .navbar-light .navbar-brand:hover, .navbar-light .navbar-brand:focus {
     color:#fff;
 }
+.card-header{
+    background: #eb4034;
+}
 @media (max-width: 1024px) {
     .btn-con.default,
     .messanger-con{

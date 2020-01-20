@@ -20,3 +20,7 @@ Auth::routes();
 Route::get('/home', 'HomeController@index')->name('home');
 
 Route::post('/pusher/auth', 'HomeController@authenticate');
+
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
