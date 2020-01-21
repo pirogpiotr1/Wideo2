@@ -125,7 +125,6 @@ class App extends React.Component{
 
         });
         this.channel.bind('pusher:member_added', (member) =>{
-
             this.appendUsers();
         });
 
