@@ -29,7 +29,7 @@ class HomeController extends Controller
             'encrypted' => true
         ]);
 
-        $presence_data =['name' => auth()->user()->name];
+        $presence_data =['name' => auth()->user()->name, 'lon' => auth()->user()->lon,'lat' => auth()->user()->lat ];
         try {
             $key = $pusher->presence_auth($chanelName, $socketId, auth()->id(), $presence_data);
         } catch (PusherException $e) {

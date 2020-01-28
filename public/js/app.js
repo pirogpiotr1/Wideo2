@@ -85250,21 +85250,58 @@ function (_React$Component) {
   }, {
     key: "appendUsers",
     value: function appendUsers() {
-      var _this5 = this;
-
       var $isEmpty = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
       this.displayUser = [];
+      var sortable = [];
+      var displayUser = [];
+
+      for (var member in this.members.members) {
+        if (this.user.id != member) sortable.push([member, this.getDistanceFromLatLonInKm(this.user.lat, this.user.lon, this.members.members[member]['lat'], this.members.members[member]['lon'])]);
+      }
+
+      sortable.sort(function (a, b) {
+        return a[1] - b[1];
+      }); // console.log(sortable);
 
       if (!$isEmpty) {
-        Object.keys(this.members.members).forEach(function (key, item) {
-          if (_this5.user.id !== key) {
-            _this5.displayUser.push(key);
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = sortable[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var el = _step.value;
+            displayUser.push(el[0]);
+
+            if (displayUser.length == 10) {
+              break;
+            }
+          } //  Object.keys(this.members.members).forEach((key, item) => {
+          //     if (this.user.id !== key) {
+          //         this.displayUser.push(key);
+          //
+          //  });
+
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
           }
-        });
+        }
       } else {
         this.displayUser = [];
       }
 
+      this.displayUser = displayUser;
+      console.log(this.displayUser);
       this.setState({
         showUsers: this.displayUser
       });
@@ -85351,13 +85388,13 @@ function (_React$Component) {
   }, {
     key: "appendMessage",
     value: function appendMessage(message) {
-      var _this6 = this;
+      var _this5 = this;
 
       this.messages.push(message);
       this.setState({
         appendDOM: this.messages
       }, function () {
-        _this6.scrollToBottom();
+        _this5.scrollToBottom();
       });
     }
   }, {
@@ -85371,9 +85408,28 @@ function (_React$Component) {
       this.mesRef.current.scrollTop = this.mesRef.current.scrollHeight;
     }
   }, {
+    key: "getDistanceFromLatLonInKm",
+    value: function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+      var R = 6371; // Radius of the earth in km
+
+      var dLat = this.deg2rad(lat2 - lat1); // deg2rad below
+
+      var dLon = this.deg2rad(lon2 - lon1);
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      var d = R * c; // Distance in km
+
+      return d;
+    }
+  }, {
+    key: "deg2rad",
+    value: function deg2rad(deg) {
+      return deg * (Math.PI / 180);
+    }
+  }, {
     key: "render",
     value: function render() {
-      var _this7 = this;
+      var _this6 = this;
 
       return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "container"
@@ -85392,12 +85448,12 @@ function (_React$Component) {
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("video", {
         className: "my-video",
         ref: function ref(_ref2) {
-          _this7.myVideo = _ref2;
+          _this6.myVideo = _ref2;
         }
       }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("video", {
         className: this.hideVideoOnClosed(true),
         ref: function ref(_ref3) {
-          _this7.userVideo = _ref3;
+          _this6.userVideo = _ref3;
         }
       }))), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: this.hideButtons(true)
@@ -85406,12 +85462,12 @@ function (_React$Component) {
       }, "Active users"), this.displayUser.map(function (row, id) {
         return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
           onClick: function onClick() {
-            _this7.callTo({
+            _this6.callTo({
               row: row
             });
           },
           key: row
-        }, " ", _this7.members.members[row]['name'], "  ", row, "  ");
+        }, " ", _this6.members.members[row]['name'], "  ", row, "  ");
       })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: this.showMessangerCon(true)
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -85419,7 +85475,7 @@ function (_React$Component) {
       }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
         type: "button",
         onClick: function onClick() {
-          return _this7.leaveRoom();
+          return _this6.leaveRoom();
         },
         value: "Leave room"
       })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -85429,7 +85485,7 @@ function (_React$Component) {
         ref: this.mesRef
       }, this.state.appendDOM ? this.state.appendDOM.map(function (d, id) {
         return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: _this7.messageClass(d.owner),
+          className: _this6.messageClass(d.owner),
           key: id
         }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
           className: "name"

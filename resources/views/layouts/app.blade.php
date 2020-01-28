@@ -15,7 +15,9 @@
     <script>
         window.user = {
             id: "{{auth()->id()}}",
-            name: "{{auth()->user()->name}}"
+            name: "{{auth()->user()->name}}",
+            lon:"{{auth()->user()->lon}}",
+            lat:"{{auth()->user()->lat}}"
         };
         window.csrfToken = "{{csrf_token()}}";
 

@@ -67,6 +67,18 @@
                 margin-bottom: 30px;
                 color:#eb4034;
             }
+            .main-content h1{
+                font-size: 42px;
+                text-transform: uppercase;
+            }
+            .main-content p{
+                font-size: 21px;
+            }
+            .main-content{
+                max-width: 80%;
+                margin: 0 auto;
+            }
+
         </style>
     </head>
     <body>
@@ -87,7 +99,10 @@
 
             <div class="content">
                 <div class="title m-b-md">
-                   Video chat
+                    <div class="main-content">
+                     <h1>Video chat</h1>
+                      <p>A web application that allows to communicate between users in real time. Video chat has been successfully completed with the use of latest programming libraries and tools. The advantages of the application are an attractive graphic interface, effective and fast real-time communication, as well as protection of usage. Basic tests were carried out for the project, which made it possible to improve the website's appearance and the intuitiveness of using the created application</p>
+                    </div>
                 </div>
 
 

@@ -253,17 +253,39 @@ class App extends React.Component{
     appendUsers($isEmpty = null){
 
         this.displayUser = [];
+        var sortable = [];
+        var displayUser = [];
+        for (var member in this.members.members) {
+
+            if(this.user.id != member)
+              sortable.push([member, this.getDistanceFromLatLonInKm(this.user.lat,this.user.lon,this.members.members[member]['lat'],this.members.members[member]['lon'])]);
+        }
+
+        sortable.sort(function(a, b) {
+            return a[1] - b[1];
+        });
+
+       // console.log(sortable);
 
         if(!$isEmpty) {
-            Object.keys(this.members.members).forEach((key, item) => {
-                if (this.user.id !== key) {
-                    this.displayUser.push(key);
+            for( let el of sortable){
+
+                displayUser.push(el[0]);
+                if( displayUser.length == 10){
+                    break;
                 }
-            });
+            }
+
+          //  Object.keys(this.members.members).forEach((key, item) => {
+           //     if (this.user.id !== key) {
+           //         this.displayUser.push(key);
+          //
+          //  });
         }else{
             this.displayUser = [];
         }
-
+        this.displayUser  = displayUser;
+        console.log( this.displayUser);
         this.setState({
             showUsers: this.displayUser,
         });
@@ -343,6 +365,23 @@ class App extends React.Component{
     scrollToBottom() {
         this.mesRef.current.scrollTop = this.mesRef.current.scrollHeight;
     }
+     getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+        var R = 6371; // Radius of the earth in km
+        var dLat = this.deg2rad(lat2-lat1);  // deg2rad below
+        var dLon = this.deg2rad(lon2-lon1);
+        var a =
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+            Math.sin(dLon/2) * Math.sin(dLon/2)
+        ;
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        var d = R * c; // Distance in km
+        return d;
+    }
+    deg2rad(deg) {
+        return deg * (Math.PI/180)
+    }
+
     render() {
         return (
             <div className="container">
