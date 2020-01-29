@@ -378,8 +378,8 @@ class App extends React.Component{
         var d = R * c; // Distance in km
         return d;
     }
-    deg2rad(deg) {
-        return deg * (Math.PI/180)
+    deg2rad(degree) {
+        return degree * (Math.PI/180)
     }
 
     render() {
