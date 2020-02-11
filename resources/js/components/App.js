@@ -164,8 +164,16 @@ class App extends React.Component{
         });
 
         this.channel.bind(`client-left-${this.user.id}`,(signal) =>{
-            if(signal.userId !== this.user.id )
-              alert(`${this.members.members[signal.userId]['name']} left room!`);
+            if(signal.userId !== this.user.id ) {
+                this.setState({hideVideo: true});
+                this.setState({hideSub: false});
+                this.setState({activeUsers: false});
+                this.setState({showMessanger: false});
+                alert(`${this.members.members[signal.userId]['name']} left room!`);
+
+            }
+
+
         });
 
     }
@@ -256,11 +264,10 @@ class App extends React.Component{
         var sortable = [];
         var displayUser = [];
         for (var member in this.members.members) {
-
-            if(this.user.id != member)
-              sortable.push([member, this.getDistanceFromLatLonInKm(this.user.lat,this.user.lon,this.members.members[member]['lat'],this.members.members[member]['lon'])]);
+            if(this.user.id != member) {
+                sortable.push([member, this.getDistanceFromLatLonInKm(this.user.lat, this.user.lon, this.members.members[member]['lat'], this.members.members[member]['lon'])]);
+            }
         }
-
         sortable.sort(function(a, b) {
             return a[1] - b[1];
         });
@@ -276,16 +283,12 @@ class App extends React.Component{
                 }
             }
 
-          //  Object.keys(this.members.members).forEach((key, item) => {
-           //     if (this.user.id !== key) {
-           //         this.displayUser.push(key);
-          //
-          //  });
         }else{
             this.displayUser = [];
         }
+
         this.displayUser  = displayUser;
-        console.log( this.displayUser);
+
         this.setState({
             showUsers: this.displayUser,
         });
@@ -336,12 +339,11 @@ class App extends React.Component{
 
             this.peers[id] = undefined;
             this.connectedTo = null;
-
+            this.appendUsers();
             this.setState({hideVideo: true});
             this.setState({hideSub: false});
             this.setState({activeUsers: false});
             this.setState({showMessanger: false});
-            this.appendUsers();
             this.messages = [];
             this.state.appendDOM = [];
         }
